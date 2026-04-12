@@ -1,0 +1,59 @@
+# -----------------------------
+# OS / editor noise
+# -----------------------------
+.DS_Store
+Thumbs.db
+
+*.swp
+*.swo
+*.tmp
+*.log
+
+# Keep VS Code settings versioned unless you decide otherwise.
+# .vscode/
+
+# -----------------------------
+# C / C++ / CMake build outputs
+# -----------------------------
+**/build/
+**/cmake-build-*/
+
+**/CMakeFiles/
+**/CMakeCache.txt
+**/cmake_install.cmake
+**/install_manifest.txt
+**/build.ninja
+**/compile_commands.json
+
+*.o
+*.obj
+*.so
+*.a
+*.out
+
+# -----------------------------
+# Flutter / Dart / Pub
+# -----------------------------
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.pub/
+**/.pub-cache/
+**/coverage/
+
+# Flutter build outputs
+**/build/
+
+# Generated Flutter Linux engine files
+**/linux/flutter/ephemeral/
+
+# Optional generated API docs
+**/doc/api/
+
+# -----------------------------
+# IDE files
+# -----------------------------
+*.iml
+*.ipr
+*.iws
+.idea/
