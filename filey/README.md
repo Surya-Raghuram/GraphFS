@@ -3,7 +3,7 @@
 > Markdown mind maps — connected thought.
 
 A desktop graph editor where every node is a real `.md` file on disk.
-The entire project lives in a single self-contained folder.
+The entire project lives in a single self-contained folder. The md files are stored within the folder along with a 
 
 ---
 
@@ -32,7 +32,7 @@ filey/
 │   │   │   ├── filey_ffi.dart    ← Dart FFI bindings to C symbols
 │   │   │   └── filey_project.dart← ChangeNotifier wrapping FFI
 │   │   ├── theme/
-│   │   │   └── filey_theme.dart  ← dark industrial theme, amber accent
+│   │   │   └── filey_theme.dart  ← dark theme, yellow accent
 │   │   ├── widgets/
 │   │   │   ├── graph_canvas.dart ← CustomPainter: pan/zoom/drag/click
 │   │   │   └── markdown_editor.dart ← edit + preview panel, auto-save
@@ -43,7 +43,7 @@ filey/
 │   │   └── CMakeLists.txt        ← bundles libfiley_core.so
 │   └── pubspec.yaml
 │
-└── build.sh                      ← one-shot build script (Arch Linux)
+└── build.sh                      ← one-shot build script (Only for arch Linux)
 ```
 
 ---
@@ -60,19 +60,13 @@ my_notes/                    ← your project folder (name it anything)
 ```
 
 - Renaming a node in the UI only updates its **label** in `main.filey`.
-  The `.md` filename (UUID-based) never changes → no broken links ever.
-- The entire folder is portable — zip it, git it, rsync it.
-- Individual nodes can be exported as human-readable `<label>.md` files.
+  The `.md` filename (UUID-based) never changes and should not be changed. This makes sure there is no broken links ever.
+- The entire folder is portable, you can zip it and share it.
+- Individual nodes can be exported as separate `<label>.md` files which are editable.
 
 ---
 
 ## Dependencies
-
-### System (Arch Linux)
-
-```bash
-sudo pacman -S base-devel flutter gtk3 pkg-config
-```
 
 Flutter needs these for Linux desktop:
 ```bash
@@ -93,12 +87,9 @@ Place in `flutter_app/fonts/`:
 ## Build & Run
 
 ```bash
-# Clone / enter the repo
 cd filey
-
-# One-shot build (builds C++ lib, runs tests, builds Flutter, bundles .so)
+# build script only for arch
 ./build.sh release
-
 # Run
 build/linux/x64/release/bundle/run_filey.sh
 ```
@@ -134,7 +125,7 @@ LD_LIBRARY_PATH=build/linux/x64/release/bundle/lib \
 ---
 
 ## Interaction guide
-
+The app will soon include an info page containing this information.
 | Action | Result |
 |---|---|
 | Click empty canvas | Add new node at that position |
@@ -150,7 +141,7 @@ LD_LIBRARY_PATH=build/linux/x64/release/bundle/lib \
 
 ---
 
-## Architecture notes
+## Architecture design
 
 ### Why FFI instead of a subprocess?
 
@@ -158,8 +149,11 @@ The C++ library is loaded as a **shared object** (`.so`) directly into the
 Flutter process via `dart:ffi`. There is no IPC, no serialisation overhead
 on the hot path — node moves (called continuously during drag) go through
 a direct function call. Only the `filey_graph_json()` call (for full graph
-refresh after mutations) involves JSON, and that only fires on structural
+refresh after editing) involves JSON, and that only fires on structural
 changes (add/remove node, add/remove edge).
+
+The C++ core and the Dart service layer are identical across all devices(support will be added in late editions).
+Only the library-loading path in `filey_ffi.dart` changes.
 
 ### Why UUID filenames?
 
@@ -169,12 +163,4 @@ This means:
 - Edges reference UUIDs, so they never break after rename
 - Git history of a `.md` file tracks a node's content correctly across renames
 
-### Adding web / mobile later
 
-Replace `dart:ffi` + `.so` with:
-- **Web**: Emscripten → `.wasm`, call via `dart:js_interop`
-- **Android**: NDK build → `.so` bundled in APK, same FFI code
-- **iOS**: static `.a`, same FFI code
-
-The C++ core and the Dart service layer are identical across all targets.
-Only the library-loading path in `filey_ffi.dart` changes.
