@@ -9,7 +9,7 @@ import 'dart:ffi';
 /// Notifies listeners whenever the graph changes.
 class FileyProject extends ChangeNotifier {
   final _ffi = FileyFFI.instance;
-  var _handle = nullptr;
+  Pointer<Void> _handle = nullptr;
 
   bool get isOpen => _handle != nullptr && _ffi.isOpen(_handle);
   String get rootPath => isOpen ? _ffi.rootPath(_handle).toDartString() : '';
@@ -18,26 +18,26 @@ class FileyProject extends ChangeNotifier {
   GraphModel get graph => _graph;
 
   // ── Lifecycle ────────────────────────────────────────────────
-  Future<bool> create(String path) async {
+  Future<bool> create(String path) {
     _closeIfOpen();
     final pathPtr = path.toNativeUtf8();
-    Pointer<Void> _handle = nullptr;
+    _handle = _ffi.create(pathPtr);
     calloc.free(pathPtr);
-    if (_handle == nullptr) return false;
+    if (_handle == nullptr) return Future.value(false);
     _refreshGraph();
     notifyListeners();
-    return true;
+    return Future.value(true);
   }
 
-  Future<bool> open(String path) async {
+  Future<bool> open(String path) {
     _closeIfOpen();
     final pathPtr = path.toNativeUtf8();
-    Pointer<Void> _handle = nullptr;
+    _handle = _ffi.open(pathPtr);
     calloc.free(pathPtr);
-    if (_handle == nullptr) return false;
+    if (_handle == nullptr) return Future.value(false);
     _refreshGraph();
     notifyListeners();
-    return true;
+    return Future.value(true);
   }
 
   void save() {
