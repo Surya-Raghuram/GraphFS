@@ -46,7 +46,8 @@ class GraphCanvas extends StatefulWidget {
 
 class _GraphCanvasState extends State<GraphCanvas>
     with SingleTickerProviderStateMixin {
-
+  // ── for visual drag ─────────────────────────────────────────────────────
+  int _paintTick =0;
   // ── view transform ────────────────────────────────────────────
   Offset _pan   = Offset.zero;
   double _scale = 1.0;
@@ -129,7 +130,7 @@ class _GraphCanvasState extends State<GraphCanvas>
       if (node != null) {
         node.x = newX;
         node.y = newY;
-        setState(() {});
+        setState(() {_paintTick++;});
       }
     } else {
       setState(() => _pan += d.delta);
@@ -191,6 +192,7 @@ class _GraphCanvasState extends State<GraphCanvas>
               selectedId:        widget.selectedNodeId,
               pendingEdgeFromId: widget.pendingEdgeFromId,
               nodeR:             _nodeR,
+              paintTick:        _paintTick,
             ),
             child: const SizedBox.expand(),
           ),
@@ -204,6 +206,7 @@ class _GraphCanvasState extends State<GraphCanvas>
 //  _GraphPainter
 // ─────────────────────────────────────────────────────────────────
 class _GraphPainter extends CustomPainter {
+  final int paintTick;
   final GraphModel graph;
   final Offset     pan;
   final double     scale;
@@ -212,6 +215,7 @@ class _GraphPainter extends CustomPainter {
   final double     nodeR;
 
   _GraphPainter({
+    required this.paintTick,
     required this.graph,
     required this.pan,
     required this.scale,
@@ -361,6 +365,7 @@ class _GraphPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_GraphPainter old) =>
+      old.paintTick != paintTick ||
       old.graph  != graph  ||
       old.pan    != pan    ||
       old.scale  != scale  ||

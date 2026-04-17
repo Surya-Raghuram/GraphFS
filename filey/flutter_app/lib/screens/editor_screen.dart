@@ -10,12 +10,12 @@ import 'home_screen.dart';
 // ─────────────────────────────────────────────────────────────────
 //  EditorScreen  –  the main 2-panel layout
 //
-//  ┌─────────────┬──────────────────────────────┐
-//  │  sidebar    │        graph canvas          │
-//  │  (node list)│                              │
-//  │             ├──────────────────────────────┤
-//  │             │    markdown editor (bottom)  │
-//  └─────────────┴──────────────────────────────┘
+//  ┌─────────┬───────────────────┬──────────┐
+//  │ sidebar │   graph canvas    │ Md editor│
+//  │         │                   │          │
+//  │         │                   │          │
+//  │         │                   │          │
+//  └─────────┴───────────────────┴──────────┘
 //
 //  The editor panel slides in from the right when a node is selected.
 // ─────────────────────────────────────────────────────────────────
@@ -49,7 +49,7 @@ class _EditorScreenState extends State<EditorScreen> {
     });
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Tap another node to connect, or tap background to cancel'),
+        content: Text('Select another node to connect, or tap background to cancel'),
         duration: Duration(seconds: 3),
         backgroundColor: FileyColors.bg3,
       ),

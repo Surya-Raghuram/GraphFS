@@ -193,7 +193,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(height: 6),
         const Text(
-          'markdown mind maps  ·  connected thought',
+          'markdown mind maps  |  connected thoughts',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontFamily: 'IBMPlexMono',
