@@ -4,6 +4,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import '../models/graph_model.dart';
 import '../services/filey_project.dart';
 import '../theme/filey_theme.dart';
+import '../screens/text_editor_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────
 //  MarkdownEditor
@@ -15,11 +16,13 @@ class MarkdownEditor extends StatefulWidget {
   final FileyProject project;
   final VoidCallback? onClose;
   final void Function(String newLabel)? onRename;
+  final bool isFullscreen;
 
   const MarkdownEditor({
     super.key,
     required this.node,
     required this.project,
+    this.isFullscreen = false,
     this.onClose,
     this.onRename,
   });
@@ -31,7 +34,7 @@ class MarkdownEditor extends StatefulWidget {
 class _MarkdownEditorState extends State<MarkdownEditor> {
   late final TextEditingController _ctrl;
   late final TextEditingController _labelCtrl;
-  bool _preview    = false;
+  bool _preview    = true;
   bool _dirty      = false;
   bool _renaming   = false;
   Timer? _saveTimer;
@@ -55,7 +58,7 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
       _ctrl.text = content;
       _ctrl.addListener(_onTextChanged);
       _labelCtrl.text = widget.node.label;
-      setState(() { _dirty = false; _preview = false; });
+      setState(() { _dirty = false; _preview = true; });
     }
   }
 
@@ -98,7 +101,7 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
         const Divider(),
         _buildToolbar(),
         const Divider(),
-        Expanded(child: _preview ? _buildPreview() : _buildEditor()),
+        Expanded(child: widget.isFullscreen ? _buildEditor() : _buildPreview()),
         if (_dirty) _buildSaveIndicator(),
       ],
     );
@@ -185,22 +188,26 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
       color: FileyColors.bg1,
       child: Row(
         children: [
-          // edit / preview toggle
-          _ToggleBtn(label: 'EDIT',    active: !_preview, onTap: () => setState(() => _preview = false)),
-          const SizedBox(width: 4),
-          _ToggleBtn(label: 'PREVIEW', active:  _preview, onTap: () => setState(() => _preview = true)),
-          const SizedBox(width: 12),
-          const VerticalDivider(width: 1),
-          const SizedBox(width: 12),
-
-          // markdown shortcuts (only in edit mode)
-          if (!_preview) ...[
+          if (widget.isFullscreen) ...[
+            // markdown shortcuts (only in fullscreen edit mode)
             _MdBtn(label: 'B',  tooltip: 'Bold',   onTap: () => _wrap('**', '**')),
             _MdBtn(label: 'I',  tooltip: 'Italic', onTap: () => _wrap('_', '_')),
             _MdBtn(label: 'H1', tooltip: 'H1',     onTap: () => _insertLine('# ')),
             _MdBtn(label: 'H2', tooltip: 'H2',     onTap: () => _insertLine('## ')),
             _MdBtn(label: '—',  tooltip: 'HR',     onTap: () => _insertLine('\n---\n')),
             _MdBtn(label: '[ ]', tooltip: 'Todo',  onTap: () => _insertLine('- [ ] ')),
+          ] else ...[
+            // edit button for right sidebar
+            TextButton.icon(
+              onPressed: () {
+                Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => TextEditorScreen(node: widget.node)
+                ));
+              },
+              icon: const Icon(Icons.edit, size: 16),
+              label: const Text('EDIT FULLSCREEN'),
+              style: TextButton.styleFrom(foregroundColor: FileyColors.accent),
+            ),
           ],
 
           const Spacer(),
@@ -224,6 +231,7 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
         controller: _ctrl,
         maxLines: null,
         expands: true,
+        textAlignVertical: TextAlignVertical.top,
         style: const TextStyle(
           fontFamily: 'IBMPlexMono',
           fontSize: 13.5,

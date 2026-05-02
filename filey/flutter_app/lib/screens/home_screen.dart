@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/filey_project.dart';
 import '../theme/filey_theme.dart';
 import 'editor_screen.dart';
 import 'dart:io';
 
 // ─────────────────────────────────────────────────────────────────
-//  HomeScreen  –  landing page with create / open actions
+//  HomeScreen  –  landing page with create / open project options and recent projects list
 // ─────────────────────────────────────────────────────────────────
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,6 +19,31 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   bool _busy = false;
+  List<String> _recents = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRecents();
+  }
+
+  Future<void> _loadRecents() async {
+    final pref = await SharedPreferences.getInstance();
+    setState(() {
+      _recents = pref.getStringList('recent_projects') ?? [];
+    });
+  }
+
+  Future<void> _addRecent(String path) async {
+    final pref = await SharedPreferences.getInstance();
+    final list = pref.getStringList('recent_projects') ?? [];
+    list.remove(path);
+    list.insert(0, path);
+    // Keep max 5 recents
+    if (list.length > 5) list.removeLast();
+    await pref.setStringList('recent_projects', list);
+    if (mounted) setState(() => _recents = list);
+  }
 
   Future<void> _createProject() async {
     final dir = await FilePicker.platform.getDirectoryPath(
@@ -28,10 +54,11 @@ class _HomeScreenState extends State<HomeScreen> {
     final name = await _promptName();
     if (name == null || !mounted) return;
 
-    // Clean the path just in case Linux handed us a URI
+    // Clean the path
     final safeDir = dir.replaceFirst('file://', '').trim();
     final path = '$safeDir/$name';
 
+    // Creating process
     try {
       // 1. Let Dart handle OS-level folder creation
       final newDir = Directory(path);
@@ -43,14 +70,14 @@ class _HomeScreenState extends State<HomeScreen> {
       final project = context.read<FileyProject>();
       
       // 2. Use C++ open() instead of create(). 
-      // Your C++ open() is already programmed to initialize empty folders!
       final ok = await project.open(path);
       setState(() => _busy = false);
 
       if (!ok && mounted) {
-        _showError('Folder created, but C++ core rejected it.');
+        if (mounted) _showError('Folder created, but C++ core rejected it.');
         return;
       }
+      _addRecent(path);
       if (mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const EditorScreen()),
@@ -58,7 +85,6 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     } catch (e) {
       setState(() => _busy = false);
-      // This will instantly show EXACTLY what Linux is complaining about!
       _showError('OS Error creating directory:\n$e'); 
     }
   }
@@ -77,9 +103,28 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => _busy = false);
 
     if (!ok && mounted) {
-      _showError('Could not open project at $safeDir.\nMake sure it is a valid Filey project folder.');
+      if (mounted) _showError('Could not open project at $safeDir.\nMake sure it is a valid Filey project folder.');
       return;
     }
+    _addRecent(safeDir);
+    if (mounted) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const EditorScreen()),
+      );
+    }
+  }
+
+  Future<void> _openRecentProject(String path) async {
+    setState(() => _busy = true);
+    final project = context.read<FileyProject>();
+    final ok = await project.open(path);
+    setState(() => _busy = false);
+
+    if (!ok && mounted) {
+      if (mounted) _showError('Could not open recent project at $path.');
+      return;
+    }
+    _addRecent(path);
     if (mounted) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const EditorScreen()),
@@ -219,6 +264,66 @@ class _HomeScreenState extends State<HomeScreen> {
           subtitle: 'Open an existing .fileydir folder',
           onTap: _openProject,
         ),
+
+        if (_recents.isNotEmpty) ...[
+          const SizedBox(height: 32),
+          const Text(
+            'RECENT PROJECTS',
+            style: TextStyle(
+              fontFamily: 'SpaceGrotesk',
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: FileyColors.textMuted,
+              letterSpacing: 1.0,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ..._recents.map((path) {
+            final folder = path.split('/').last;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: InkWell(
+                onTap: () => _openRecentProject(path),
+                borderRadius: BorderRadius.circular(6),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: FileyColors.bg1,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: FileyColors.border),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.history, size: 16, color: FileyColors.textMuted),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(folder,
+                              style: const TextStyle(
+                                fontFamily: 'SpaceGrotesk',
+                                fontSize: 14,
+                                color: FileyColors.textPrimary,
+                              )),
+                            Text(path,
+                              style: const TextStyle(
+                                fontFamily: 'IBMPlexMono',
+                                fontSize: 10,
+                                color: FileyColors.textMuted,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }),
+        ],
 
         const SizedBox(height: 40),
         const Text(

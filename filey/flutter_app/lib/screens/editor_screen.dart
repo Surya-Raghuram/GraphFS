@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/graph_model.dart';
@@ -33,6 +34,34 @@ class _EditorScreenState extends State<EditorScreen> {
   // editor panel width (resizable)
   double _editorWidth = 420;
   bool   _editorOpen  = false;
+
+  bool   _isSaving    = false;
+  Timer? _autoSaveTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _autoSaveTimer = Timer.periodic(const Duration(seconds: 3), (_) => _doAutoSave());
+  }
+
+  @override
+  void dispose() {
+    _autoSaveTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _doAutoSave() async {
+    if (!mounted) return;
+    final project = context.read<FileyProject>();
+    if (!project.isOpen) return;
+
+    setState(() => _isSaving = true);
+    project.save();
+    
+    // show spinner briefly so user knows it happened
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (mounted) setState(() => _isSaving = false);
+  }
 
   void _selectNode(String uuid) {
     setState(() {
@@ -136,12 +165,6 @@ class _EditorScreenState extends State<EditorScreen> {
                             project.moveNode(uuid, x, y),
                       ),
 
-                      // ── Canvas controls overlay ───────────────
-                      Positioned(
-                        bottom: 16, right: _editorOpen ? _editorWidth + 16 : 16,
-                        child: _buildCanvasControls(project),
-                      ),
-
                       // ── Edge-mode indicator ───────────────────
                       if (_pendingEdgeFrom != null)
                         Positioned(
@@ -171,7 +194,25 @@ class _EditorScreenState extends State<EditorScreen> {
 
                 // ── Editor panel ──────────────────────────────
                 if (_editorOpen && _selectedId != null) ...[
-                  const VerticalDivider(width: 1),
+                  GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onHorizontalDragUpdate: (details) {
+                      setState(() {
+                        _editorWidth = (_editorWidth - details.delta.dx)
+                            .clamp(200.0, MediaQuery.of(context).size.width - 250.0);
+                      });
+                    },
+                    child: MouseRegion(
+                      cursor: SystemMouseCursors.resizeLeftRight,
+                      child: Container(
+                        width: 6,
+                        color: FileyColors.border.withValues(alpha: 0.5),
+                        child: const Center(
+                          child: VerticalDivider(width: 1, color: FileyColors.border),
+                        ),
+                      ),
+                    ),
+                  ),
                   SizedBox(
                     width: _editorWidth,
                     child: _buildEditorPanel(project, graph),
@@ -215,35 +256,28 @@ class _EditorScreenState extends State<EditorScreen> {
               color: FileyColors.textSecondary,
             )),
           const Spacer(),
-          // Save indicator
-          Tooltip(
-            message: 'Save project (Ctrl+S)',
-            child: TextButton.icon(
-              onPressed: project.save,
-              icon: const Icon(Icons.save_outlined, size: 14),
-              label: const Text('Save'),
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              ),
+          // Auto-save indicator
+          if (_isSaving)
+            const SizedBox(
+              width: 14, height: 14,
+              child: CircularProgressIndicator(strokeWidth: 2, color: FileyColors.accent),
             ),
-          ),
           const SizedBox(width: 8),
           Tooltip(
             message: 'Close project',
-            child: TextButton.icon(
+            child: IconButton(
               onPressed: () {
                 project.closeProject();
                 Navigator.of(context).pushReplacement(
                   MaterialPageRoute(builder: (_) => const HomeScreen()),
                 );
               },
-              icon: const Icon(Icons.close, size: 14),
-              label: const Text('Close'),
-              style: TextButton.styleFrom(
-                foregroundColor: FileyColors.textSecondary,
-              ),
+              icon: const Icon(Icons.close, size: 16),
+              color: FileyColors.textSecondary,
+              splashRadius: 20,
             ),
           ),
+          const SizedBox(width: 4),
         ],
       ),
     );
@@ -311,25 +345,6 @@ class _EditorScreenState extends State<EditorScreen> {
       onRename: (newLabel) => project.renameNode(node.id, newLabel),
     );
   }
-
-  Widget _buildCanvasControls(FileyProject project) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _FabButton(
-          icon: Icons.add,
-          tooltip: 'Add node (or double-click canvas)',
-          onTap: () => _addNodeAt(const Offset(0, 0)),
-        ),
-        const SizedBox(height: 8),
-        _FabButton(
-          icon: Icons.link,
-          tooltip: 'Select a node then double-tap to start edge',
-          onTap: _selectedId != null ? () => _startEdge(_selectedId!) : null,
-        ),
-      ],
-    );
-  }
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -377,38 +392,6 @@ class _SidebarItem extends StatelessWidget {
       ),
     );
   }
-}
-
-// ─────────────────────────────────────────────────────────────────
-//  FAB button
-// ─────────────────────────────────────────────────────────────────
-class _FabButton extends StatelessWidget {
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback? onTap;
-  const _FabButton({required this.icon, required this.tooltip, this.onTap});
-
-  @override
-  Widget build(BuildContext context) => Tooltip(
-    message: tooltip,
-    child: Material(
-      color: FileyColors.bg2,
-      borderRadius: BorderRadius.circular(6),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(6),
-        child: Container(
-          width: 40, height: 40,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: FileyColors.border),
-          ),
-          child: Icon(icon, size: 18,
-            color: onTap != null ? FileyColors.accent : FileyColors.textMuted),
-        ),
-      ),
-    ),
-  );
 }
 
 // ─────────────────────────────────────────────────────────────────

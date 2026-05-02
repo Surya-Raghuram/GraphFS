@@ -56,6 +56,7 @@ class _GraphCanvasState extends State<GraphCanvas>
   String? _draggingId;
   Offset  _dragNodeStart  = Offset.zero; // node pos at drag start
   Offset  _dragPointerStart = Offset.zero;
+  Size    _canvasSize = Size.zero;
 
   // ── animation (gentle snap to fit) ───────────────────────────
   late final AnimationController _fitCtrl;
@@ -123,8 +124,21 @@ class _GraphCanvasState extends State<GraphCanvas>
   void _onPanUpdate(DragUpdateDetails d) {
     if (_draggingId != null) {
       final delta   = d.localPosition - _dragPointerStart;
-      final newX    = _dragNodeStart.dx + delta.dx / _scale;
-      final newY    = _dragNodeStart.dy + delta.dy / _scale;
+      double newX    = _dragNodeStart.dx + delta.dx / _scale;
+      double newY    = _dragNodeStart.dy + delta.dy / _scale;
+
+      if (_canvasSize.width > 0 && _canvasSize.height > 0) {
+        final minLogicalX = (-_pan.dx + _nodeR * _scale) / _scale;
+        final maxLogicalX = (_canvasSize.width - _pan.dx - _nodeR * _scale) / _scale;
+        final minLogicalY = (-_pan.dy + _nodeR * _scale) / _scale;
+        final maxLogicalY = (_canvasSize.height - _pan.dy - _nodeR * _scale) / _scale;
+        
+        if (maxLogicalX > minLogicalX && maxLogicalY > minLogicalY) {
+          newX = newX.clamp(minLogicalX, maxLogicalX);
+          newY = newY.clamp(minLogicalY, maxLogicalY);
+        }
+      }
+
       // optimistic local update
       final node = widget.graph.nodeById(_draggingId!);
       if (node != null) {
@@ -172,33 +186,36 @@ class _GraphCanvasState extends State<GraphCanvas>
 
   @override
   Widget build(BuildContext context) {
-    return Listener(
-      onPointerSignal: (e) {
-        if (e is PointerScrollEvent) _onScroll(e);
-      },
-      child: GestureDetector(
-        onPanStart:          _onPanStart,
-        onPanUpdate:         _onPanUpdate,
-        onPanEnd:            _onPanEnd,
-        onTapUp:             _onTapUp,
-        onDoubleTapDown:     _onDoubleTapDown,
-        onSecondaryTapUp:    _onSecondaryTapUp,
-        child: RepaintBoundary(
-          child: CustomPaint(
-            painter: _GraphPainter(
-              graph:             widget.graph,
-              pan:               _pan,
-              scale:             _scale,
-              selectedId:        widget.selectedNodeId,
-              pendingEdgeFromId: widget.pendingEdgeFromId,
-              nodeR:             _nodeR,
-              paintTick:        _paintTick,
+    return LayoutBuilder(builder: (context, constraints) {
+      _canvasSize = Size(constraints.maxWidth, constraints.maxHeight);
+      return Listener(
+        onPointerSignal: (e) {
+          if (e is PointerScrollEvent) _onScroll(e);
+        },
+        child: GestureDetector(
+          onPanStart:          _onPanStart,
+          onPanUpdate:         _onPanUpdate,
+          onPanEnd:            _onPanEnd,
+          onTapUp:             _onTapUp,
+          onDoubleTapDown:     _onDoubleTapDown,
+          onSecondaryTapUp:    _onSecondaryTapUp,
+          child: RepaintBoundary(
+            child: CustomPaint(
+              painter: _GraphPainter(
+                graph:             widget.graph,
+                pan:               _pan,
+                scale:             _scale,
+                selectedId:        widget.selectedNodeId,
+                pendingEdgeFromId: widget.pendingEdgeFromId,
+                nodeR:             _nodeR,
+                paintTick:        _paintTick,
+              ),
+              child: const SizedBox.expand(),
             ),
-            child: const SizedBox.expand(),
           ),
         ),
-      ),
-    );
+      );
+    });
   }
 }
 

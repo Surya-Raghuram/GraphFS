@@ -262,7 +262,7 @@ std::string FileyProject::nodeMdPath(const std::string& uuid) const {
 //  Edge CRUD
 // ─────────────────────────────────────────────────────────────────
 bool FileyProject::addEdge(const std::string& from, const std::string& to,
-                            const std::string& edgeLabel, bool bidir) {
+                            const std::string& edgeLabel, bool bidirectional) {
     if (!m_open) return false;
     if (!findNode(from) || !findNode(to)) return false;
     if (edgeExists(from, to)) return false;
@@ -271,7 +271,7 @@ bool FileyProject::addEdge(const std::string& from, const std::string& to,
     fillStrField(e.from_id, sizeof(e.from_id), from);
     fillStrField(e.to_id,   sizeof(e.to_id),   to);
     fillStrField(e.label,   sizeof(e.label),   edgeLabel);
-    e.bidirectional = bidir ? 1 : 0;
+    e.bidirectional = bidirectional ? 1 : 0;
 
     m_edges.push_back(e);
     return writeMainFiley();
@@ -389,4 +389,4 @@ bool FileyProject::readMainFiley() {
     return file.good() || file.eof();
 }
 
-} // namespace filey
+}
