@@ -34,9 +34,9 @@ class MarkdownEditor extends StatefulWidget {
 class _MarkdownEditorState extends State<MarkdownEditor> {
   late final TextEditingController _ctrl;
   late final TextEditingController _labelCtrl;
-  bool _preview    = true;
   bool _dirty      = false;
   bool _renaming   = false;
+  bool _showPreview = false;
   Timer? _saveTimer;
 
   @override
@@ -58,7 +58,7 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
       _ctrl.text = content;
       _ctrl.addListener(_onTextChanged);
       _labelCtrl.text = widget.node.label;
-      setState(() { _dirty = false; _preview = true; });
+      setState(() { _dirty = false; });
     }
   }
 
@@ -94,16 +94,19 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
   // ── build ────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildHeader(),
-        const Divider(),
-        _buildToolbar(),
-        const Divider(),
-        Expanded(child: widget.isFullscreen ? _buildEditor() : _buildPreview()),
-        if (_dirty) _buildSaveIndicator(),
-      ],
+    return Container(
+      color: FileyColors.bg0,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildHeader(),
+          const Divider(),
+          _buildToolbar(),
+          const Divider(),
+          Expanded(child: widget.isFullscreen ? (_showPreview ? _buildPreview() : _buildEditor()) : _buildPreview()),
+          if (_dirty) _buildSaveIndicator(),
+        ],
+      ),
     );
   }
 
@@ -189,13 +192,30 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
       child: Row(
         children: [
           if (widget.isFullscreen) ...[
-            // markdown shortcuts (only in fullscreen edit mode)
-            _MdBtn(label: 'B',  tooltip: 'Bold',   onTap: () => _wrap('**', '**')),
-            _MdBtn(label: 'I',  tooltip: 'Italic', onTap: () => _wrap('_', '_')),
-            _MdBtn(label: 'H1', tooltip: 'H1',     onTap: () => _insertLine('# ')),
-            _MdBtn(label: 'H2', tooltip: 'H2',     onTap: () => _insertLine('## ')),
-            _MdBtn(label: '—',  tooltip: 'HR',     onTap: () => _insertLine('\n---\n')),
-            _MdBtn(label: '[ ]', tooltip: 'Todo',  onTap: () => _insertLine('- [ ] ')),
+            _ToggleBtn(
+              label: 'EDIT',
+              active: !_showPreview,
+              onTap: () => setState(() => _showPreview = false),
+            ),
+            const SizedBox(width: 4),
+            _ToggleBtn(
+              label: 'PREVIEW',
+              active: _showPreview,
+              onTap: () => setState(() => _showPreview = true),
+            ),
+            const SizedBox(width: 12),
+            const VerticalDivider(indent: 8, endIndent: 8),
+            const SizedBox(width: 12),
+            
+            if (!_showPreview) ...[
+              // markdown shortcuts (only in fullscreen edit mode)
+              _MdBtn(label: 'B',  tooltip: 'Bold',   onTap: () => _wrap('**', '**')),
+              _MdBtn(label: 'I',  tooltip: 'Italic', onTap: () => _wrap('_', '_')),
+              _MdBtn(label: 'H1', tooltip: 'H1',     onTap: () => _insertLine('# ')),
+              _MdBtn(label: 'H2', tooltip: 'H2',     onTap: () => _insertLine('## ')),
+              _MdBtn(label: '—',  tooltip: 'HR',     onTap: () => _insertLine('\n---\n')),
+              _MdBtn(label: '[ ]', tooltip: 'Todo',  onTap: () => _insertLine('- [ ] ')),
+            ]
           ] else ...[
             // edit button for right sidebar
             TextButton.icon(
@@ -205,7 +225,7 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
                 ));
               },
               icon: const Icon(Icons.edit, size: 16),
-              label: const Text('EDIT FULLSCREEN'),
+              label: const Text('EDIT'),
               style: TextButton.styleFrom(foregroundColor: FileyColors.accent),
             ),
           ],

@@ -1,6 +1,7 @@
 # === custom
 analysis.md
-
+**/.vscode/
+**/settings
 # -----------------------------
 # OS / editor noise
 # -----------------------------

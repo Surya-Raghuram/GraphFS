@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/graph_model.dart';
@@ -12,7 +11,7 @@ import 'home_screen.dart';
 //  EditorScreen  –  the main 2-panel layout
 //
 //  ┌─────────┬───────────────────┬──────────┐
-//  │ sidebar │   graph canvas    │ Md editor│
+//  │ sidebar │   graph canvas    │Md preview│
 //  │         │                   │          │
 //  │         │                   │          │
 //  │         │                   │          │
@@ -34,34 +33,6 @@ class _EditorScreenState extends State<EditorScreen> {
   // editor panel width (resizable)
   double _editorWidth = 420;
   bool   _editorOpen  = false;
-
-  bool   _isSaving    = false;
-  Timer? _autoSaveTimer;
-
-  @override
-  void initState() {
-    super.initState();
-    _autoSaveTimer = Timer.periodic(const Duration(seconds: 3), (_) => _doAutoSave());
-  }
-
-  @override
-  void dispose() {
-    _autoSaveTimer?.cancel();
-    super.dispose();
-  }
-
-  Future<void> _doAutoSave() async {
-    if (!mounted) return;
-    final project = context.read<FileyProject>();
-    if (!project.isOpen) return;
-
-    setState(() => _isSaving = true);
-    project.save();
-    
-    // show spinner briefly so user knows it happened
-    await Future.delayed(const Duration(milliseconds: 500));
-    if (mounted) setState(() => _isSaving = false);
-  }
 
   void _selectNode(String uuid) {
     setState(() {
@@ -123,7 +94,6 @@ class _EditorScreenState extends State<EditorScreen> {
         },
         onStartEdge: () => _startEdge(uuid),
         onExport: () {
-          // TODO: file picker for export
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Export: pick a directory'),
               backgroundColor: FileyColors.bg3),
@@ -256,12 +226,6 @@ class _EditorScreenState extends State<EditorScreen> {
               color: FileyColors.textSecondary,
             )),
           const Spacer(),
-          // Auto-save indicator
-          if (_isSaving)
-            const SizedBox(
-              width: 14, height: 14,
-              child: CircularProgressIndicator(strokeWidth: 2, color: FileyColors.accent),
-            ),
           const SizedBox(width: 8),
           Tooltip(
             message: 'Close project',

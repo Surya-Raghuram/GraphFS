@@ -12,12 +12,10 @@ static std::string sanitizePath(const char* raw) {
     if (!raw) return "";
     std::string p(raw);
     
-    // Remove "file://" prefix if present
     if (p.find("file://") == 0) {
         p = p.substr(7);
     }
     
-    // Trim trailing whitespace and hidden newlines (\n, \r)
     while (!p.empty() && std::isspace(static_cast<unsigned char>(p.back()))) {
         p.pop_back();
     }
@@ -58,7 +56,7 @@ static void debugLog(const std::string& msg) {
     log << msg << "\n";
 }
 
-// ── Lifecycle ──────────────────────────────────────────────────────
+// ── Lifecycle ───────────
 FileyHandle filey_create(const char* raw_path) {
     debugLog("\n=== ATTEMPTING TO CREATE PROJECT ===");
     debugLog(std::string("1. Raw FFI Path: ") + (raw_path ? raw_path : "NULL"));
@@ -106,7 +104,7 @@ const char* filey_root_path(FileyHandle h) {
     return h ? proj(h)->rootPath().c_str() : "";
 }
 
-// ── Nodes ──────────────────────────────────────────────────────────
+// ── Nodes ───────
 char* filey_add_node(FileyHandle h, const char* label,
                      float x, float y, uint32_t color) {
     if (!h) return nullptr;
@@ -139,7 +137,7 @@ bool filey_export_md(FileyHandle h, const char* uuid, const char* dest_dir) {
     return h ? proj(h)->exportMarkdown(uuid, dest_dir ? dest_dir : "") : false;
 }
 
-// ── Markdown content ───────────────────────────────────────────────
+// ── Markdown content ─────
 char* filey_read_content(FileyHandle h, const char* uuid) {
     if (!h) return nullptr;
     return heap_str(proj(h)->readNodeContent(uuid));
@@ -154,7 +152,7 @@ char* filey_node_md_path(FileyHandle h, const char* uuid) {
     return heap_str(proj(h)->nodeMdPath(uuid));
 }
 
-// ── Edges ──────────────────────────────────────────────────────────
+// ── Edges ─────
 bool filey_add_edge(FileyHandle h, const char* from, const char* to,
                     const char* label, bool bidir) {
     return h ? proj(h)->addEdge(from, to, label ? label : "", bidir) : false;
@@ -168,7 +166,7 @@ bool filey_edge_exists(FileyHandle h, const char* from, const char* to) {
     return h ? proj(h)->edgeExists(from, to) : false;
 }
 
-// ── Graph JSON snapshot ────────────────────────────────────────────
+// ── Graph JSON snapshot ───────────
 char* filey_graph_json(FileyHandle h) {
     if (!h) return heap_str("{}");
     const auto& nodes = proj(h)->nodes();
@@ -203,7 +201,7 @@ char* filey_graph_json(FileyHandle h) {
     return heap_str(ss.str());
 }
 
-// ── Memory ────────────────────────────────────────────────────────
+// ── free the Memory ───
 void filey_free_str(char* s) {
     std::free(s);
 }

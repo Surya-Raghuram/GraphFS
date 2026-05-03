@@ -18,14 +18,14 @@ import '../theme/filey_theme.dart';
 class GraphCanvas extends StatefulWidget {
   final GraphModel graph;
   final String? selectedNodeId;
-  final String? pendingEdgeFromId; // orange "waiting for target"
+  final String? pendingEdgeFromId; 
 
   final void Function(String uuid) onNodeTap;
   final void Function(String uuid, double x, double y) onNodeMove;
-  final void Function(String uuid) onNodeDoubleTap; // start edge
-  final void Function(String uuid) onEdgeTargetTap; // complete edge
+  final void Function(String uuid) onNodeDoubleTap;
+  final void Function(String uuid) onEdgeTargetTap;
   final void Function(String uuid) onNodeRightClick;
-  final void Function(Offset canvasPos) onBackgroundTap; // add node
+  final void Function(Offset canvasPos) onBackgroundTap;
 
   const GraphCanvas({
     super.key,
@@ -46,7 +46,7 @@ class GraphCanvas extends StatefulWidget {
 
 class _GraphCanvasState extends State<GraphCanvas>
     with SingleTickerProviderStateMixin {
-  // ── for visual drag ─────────────────────────────────────────────────────
+  // ── for visual drag ────────────────────
   int _paintTick =0;
   // ── view transform ────────────────────────────────────────────
   Offset _pan   = Offset.zero;
@@ -54,7 +54,7 @@ class _GraphCanvasState extends State<GraphCanvas>
 
   // ── drag state ───────────────────────────────────────────────
   String? _draggingId;
-  Offset  _dragNodeStart  = Offset.zero; // node pos at drag start
+  Offset  _dragNodeStart  = Offset.zero;
   Offset  _dragPointerStart = Offset.zero;
   Size    _canvasSize = Size.zero;
 
@@ -64,10 +64,6 @@ class _GraphCanvasState extends State<GraphCanvas>
   static const double _nodeR    = 44.0;
   static const double _minScale = 0.2;
   static const double _maxScale = 3.0;
-
-  // canvas coords → screen coords
-  Offset _toScreen(double cx, double cy) =>
-      Offset(cx * _scale + _pan.dx, cy * _scale + _pan.dy);
 
   // screen coords → canvas coords
   Offset _toCanvas(Offset screen) =>
@@ -346,21 +342,30 @@ class _GraphPainter extends CustomPainter {
     if (r > 8) {
       final label  = node.label;
       final fontSize = (13.0 * scale).clamp(9.0, 18.0);
-      final tp = TextPainter(
-        text: TextSpan(
-          text: label.length > 14 ? '${label.substring(0, 12)}…' : label,
-          style: TextStyle(
-            color: isSelected ? baseColor : FileyColors.textPrimary,
-            fontSize: fontSize,
-            fontFamily: 'IBMPlexMono',
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-          ),
-        ),
+      final textStyle = TextStyle(
+        color: isSelected ? baseColor : FileyColors.textPrimary,
+        fontSize: fontSize,
+        fontFamily: 'IBMPlexMono',
+        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+      );
+
+      var tp = TextPainter(
+        text: TextSpan(text: label, style: textStyle),
         textDirection: TextDirection.ltr,
         textAlign: TextAlign.center,
-        maxLines: 2,
       );
       tp.layout(maxWidth: r * 1.7);
+
+      bool doesntFit = tp.height > r * 1.4 || tp.computeLineMetrics().length > 2;
+
+      if (doesntFit) {
+        tp.text = TextSpan(
+          text: label.isNotEmpty ? label.substring(0, 1).toUpperCase() : '',
+          style: textStyle.copyWith(fontSize: fontSize * 1.5, fontWeight: FontWeight.bold)
+        );
+        tp.layout(maxWidth: r * 1.7);
+      }
+
       tp.paint(canvas, center - Offset(tp.width / 2, tp.height / 2));
     }
   }
