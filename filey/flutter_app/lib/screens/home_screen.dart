@@ -327,7 +327,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
         const SizedBox(height: 40),
         const Text(
-          'v2.0  ·  C++ core + Flutter frontend',
+          'v1.0,1 ·  C++ core + Flutter frontend',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontFamily: 'IBMPlexMono',
