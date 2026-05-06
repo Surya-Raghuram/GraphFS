@@ -104,7 +104,6 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
           _buildToolbar(),
           const Divider(),
           Expanded(child: widget.isFullscreen ? (_showPreview ? _buildPreview() : _buildEditor()) : _buildPreview()),
-          if (_dirty) _buildSaveIndicator(),
         ],
       ),
     );
@@ -232,12 +231,18 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
 
           const Spacer(),
 
-          // save now
-          _IconBtn(
-            icon: Icons.save_outlined,
-            tooltip: 'Save now  (auto-saves on idle)',
-            onTap: _saveNow,
-          ),
+          // save indicator
+          if (_dirty)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.0),
+              child: SizedBox(
+                width: 14, height: 14,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2, 
+                  color: FileyColors.accent,
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -273,24 +278,6 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
       data: _ctrl.text,
       styleSheet: _mdStyleSheet(context),
       padding: const EdgeInsets.all(20),
-    );
-  }
-
-  Widget _buildSaveIndicator() {
-    return Container(
-      height: 24,
-      color: FileyColors.bg2,
-      alignment: Alignment.centerRight,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: const Text(
-        'unsaved changes…',
-        style: TextStyle(
-          fontFamily: 'IBMPlexMono',
-          fontSize: 10,
-          color: FileyColors.accentDim,
-          letterSpacing: 0.5,
-        ),
-      ),
     );
   }
 
