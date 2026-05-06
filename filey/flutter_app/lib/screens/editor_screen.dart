@@ -29,6 +29,7 @@ class EditorScreen extends StatefulWidget {
 class _EditorScreenState extends State<EditorScreen> {
   String? _selectedId;
   String? _pendingEdgeFrom; // uuid waiting for edge target
+  bool _sidebarExpanded = false;
 
   // editor panel width (resizable)
   double _editorWidth = 420;
@@ -116,29 +117,30 @@ class _EditorScreenState extends State<EditorScreen> {
           Expanded(
             child: Row(
               children: [
-                _buildSidebar(graph, project),
-                const VerticalDivider(width: 1),
                 Expanded(
                   child: Stack(
                     children: [
                       // ── Graph canvas ──────────────────────────
-                      GraphCanvas(
-                        graph:             graph,
-                        selectedNodeId:    _selectedId,
-                        pendingEdgeFromId: _pendingEdgeFrom,
-                        onNodeTap:         _selectNode,
-                        onNodeDoubleTap:   _startEdge,
-                        onEdgeTargetTap:   _completeEdge,
-                        onNodeRightClick:  _showNodeContextMenu,
-                        onBackgroundTap:   _onBackgroundTap,
-                        onNodeMove: (uuid, x, y) =>
-                            project.moveNode(uuid, x, y),
+                      Positioned(
+                        left: 48, top: 0, bottom: 0, right: 0,
+                        child: GraphCanvas(
+                          graph:             graph,
+                          selectedNodeId:    _selectedId,
+                          pendingEdgeFromId: _pendingEdgeFrom,
+                          onNodeTap:         _selectNode,
+                          onNodeDoubleTap:   _startEdge,
+                          onEdgeTargetTap:   _completeEdge,
+                          onNodeRightClick:  _showNodeContextMenu,
+                          onBackgroundTap:   _onBackgroundTap,
+                          onNodeMove: (uuid, x, y) =>
+                              project.moveNode(uuid, x, y),
+                        ),
                       ),
 
                       // ── Edge-mode indicator ───────────────────
                       if (_pendingEdgeFrom != null)
                         Positioned(
-                          top: 12, left: 0, right: 0,
+                          top: 12, left: 48, right: 0,
                           child: Center(
                             child: Container(
                               padding: const EdgeInsets.symmetric(
@@ -158,6 +160,12 @@ class _EditorScreenState extends State<EditorScreen> {
                             ),
                           ),
                         ),
+
+                      // ── Sidebar Opaque Overlay ────────────────
+                      Positioned(
+                        left: 0, top: 0, bottom: 0,
+                        child: _buildSidebar(graph, project),
+                      ),
                     ],
                   ),
                 ),
@@ -248,23 +256,38 @@ class _EditorScreenState extends State<EditorScreen> {
   }
 
   Widget _buildSidebar(GraphModel graph, FileyProject project) {
-    return SizedBox(
-      width: 200,
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      width: _sidebarExpanded ? 200 : 48,
+      decoration: const BoxDecoration(
+        color: FileyColors.bg1,
+        border: Border(right: BorderSide(color: FileyColors.border)),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            color: FileyColors.bg1,
-            child: Text(
-              'NODES  ${graph.nodes.length}',
-              style: const TextStyle(
-                fontFamily: 'IBMPlexMono', fontSize: 10,
-                letterSpacing: 1.2, color: FileyColors.textMuted,
-              ),
+          InkWell(
+            onTap: () => setState(() => _sidebarExpanded = !_sidebarExpanded),
+            child: Container(
+              height: 48,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              alignment: Alignment.centerLeft,
+              child: _sidebarExpanded
+                  ? Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('NODES  ${graph.nodes.length}',
+                          style: const TextStyle(
+                            fontFamily: 'IBMPlexMono', fontSize: 10,
+                            letterSpacing: 1.2, color: FileyColors.textMuted,
+                          )),
+                        const Icon(Icons.chevron_left, size: 16, color: FileyColors.textMuted),
+                      ],
+                    )
+                  : const Icon(Icons.menu, size: 16, color: FileyColors.textMuted),
             ),
           ),
-          const Divider(),
+          const Divider(height: 1),
           Expanded(
             child: ListView.builder(
               itemCount: graph.nodes.length,
@@ -275,21 +298,37 @@ class _EditorScreenState extends State<EditorScreen> {
                   node: node,
                   index: i,
                   selected: isSelected,
+                  expanded: _sidebarExpanded,
                   onTap: () => _selectNode(node.id),
                 );
               },
             ),
           ),
-          const Divider(),
-          Padding(
+          const Divider(height: 1),
+          Container(
+            height: 52,
             padding: const EdgeInsets.all(8),
-            child: TextButton.icon(
-              onPressed: () => _addNodeAt(const Offset(0, 0)),
-              icon: const Icon(Icons.add, size: 14),
-              label: const Text('Add Node'),
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              ),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              child: _sidebarExpanded
+                  ? SizedBox(
+                      key: const ValueKey('expanded_add'),
+                      width: double.infinity,
+                      child: TextButton.icon(
+                        onPressed: () => _addNodeAt(const Offset(0, 0)),
+                        icon: const Icon(Icons.add, size: 14),
+                        label: const Text('Add Node'),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        ),
+                      ),
+                    )
+                  : IconButton(
+                      key: const ValueKey('collapsed_add'),
+                      onPressed: () => _addNodeAt(const Offset(0, 0)),
+                      icon: const Icon(Icons.add, size: 18),
+                      tooltip: 'Add Node',
+                    ),
             ),
           ),
         ],
@@ -318,40 +357,69 @@ class _SidebarItem extends StatelessWidget {
   final GraphNode node;
   final int index;
   final bool selected;
+  final bool expanded;
   final VoidCallback onTap;
 
   const _SidebarItem({
     required this.node, required this.index,
-    required this.selected, required this.onTap,
+    required this.selected, required this.expanded, required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final color = node.accentColor ?? FileyColors.nodeColor(index);
+    final letter = node.label.isNotEmpty ? node.label[0].toUpperCase() : '?';
+
     return InkWell(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        height: 48,
         decoration: BoxDecoration(
           color: selected ? FileyColors.bg3 : Colors.transparent,
           border: selected
               ? const Border(left: BorderSide(color: FileyColors.accent, width: 2))
               : const Border(left: BorderSide(color: Colors.transparent, width: 2)),
         ),
-        child: Row(
-          children: [
-            Container(width: 8, height: 8,
-              decoration: BoxDecoration(shape: BoxShape.circle, color: color)),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(node.label,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontFamily: 'IBMPlexMono', fontSize: 12,
-                  color: selected ? FileyColors.textPrimary : FileyColors.textSecondary,
-                )),
-            ),
-          ],
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          child: expanded
+              ? Padding(
+                  key: const ValueKey('expanded'),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Row(
+                    children: [
+                      Container(width: 8, height: 8,
+                        decoration: BoxDecoration(shape: BoxShape.circle, color: color)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(node.label,
+                          maxLines: 1,
+                          overflow: TextOverflow.clip,
+                          style: TextStyle(
+                            fontFamily: 'IBMPlexMono', fontSize: 12,
+                            color: selected ? FileyColors.textPrimary : FileyColors.textSecondary,
+                          )),
+                      ),
+                    ],
+                  ),
+                )
+              : Container(
+                  key: const ValueKey('collapsed'),
+                  width: 24, height: 24,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: color, width: 1.5),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(letter,
+                    style: TextStyle(
+                      fontFamily: 'IBMPlexMono', fontSize: 10,
+                      color: selected ? FileyColors.textPrimary : color,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
         ),
       ),
     );
