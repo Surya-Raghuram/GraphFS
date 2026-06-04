@@ -26,6 +26,7 @@ dependencies:
   # Fonts
   google_fonts: ^6.2.1
   shared_preferences: ^2.5.5
+  syncfusion_flutter_pdfviewer: ^33.2.10
 
 dev_dependencies:
   flutter_test:

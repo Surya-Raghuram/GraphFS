@@ -80,27 +80,99 @@ class _EditorScreenState extends State<EditorScreen> {
     if (uuid != null) _selectNode(uuid);
   }
 
-  void _showNodeContextMenu(String uuid) {
+  void _showNodeContextMenu(String uuid, Offset position) {
     final project = context.read<FileyProject>();
     final node = project.graph.nodeById(uuid);
     if (node == null) return;
 
-    showDialog(
+    showGeneralDialog(
       context: context,
-      builder: (ctx) => _NodeContextDialog(
-        node: node,
-        onDelete: () {
-          project.removeNode(uuid);
-          setState(() { _selectedId = null; _editorOpen = false; });
-        },
-        onStartEdge: () => _startEdge(uuid),
-        onExport: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Export: pick a directory'),
-              backgroundColor: FileyColors.bg3),
-          );
-        },
-      ),
+      barrierColor: Colors.transparent,
+      barrierDismissible: true,
+      barrierLabel: 'ContextMenu',
+      transitionDuration: Duration.zero,
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return Stack(
+          children: [
+            Positioned(
+              left: position.dx,
+              top: position.dy,
+              child: Material(
+                color: Colors.transparent,
+                child: Container(
+                  width: 220,
+                  decoration: BoxDecoration(
+                    color: FileyColors.bg2,
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha:0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      )
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      InkWell(
+                        onTap: () { Navigator.pop(context); _startEdge(uuid); },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          child: Row(
+                            children: const [
+                              Icon(Icons.link, size: 18, color: FileyColors.textPrimary),
+                              SizedBox(width: 8),
+                              Text('Connect to another node', style: TextStyle(color: FileyColors.textPrimary, fontSize: 13)),
+                            ],
+                          ),
+                        ),
+                      ),
+                      InkWell(
+                        onTap: () {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Export: pick a directory'),
+                              backgroundColor: FileyColors.bg3),
+                          );
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          child: Row(
+                            children: const [
+                              Icon(Icons.download_outlined, size: 18, color: FileyColors.textPrimary),
+                              SizedBox(width: 8),
+                              Text('Export as .md', style: TextStyle(color: FileyColors.textPrimary, fontSize: 13)),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const Divider(height: 1, color: FileyColors.border),
+                      InkWell(
+                        onTap: () {
+                          Navigator.pop(context);
+                          project.removeNode(uuid);
+                          setState(() { _selectedId = null; _editorOpen = false; });
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          child: Row(
+                            children: const [
+                              Icon(Icons.delete_outline, size: 18, color: FileyColors.danger),
+                              SizedBox(width: 8),
+                              Text('Delete node', style: TextStyle(color: FileyColors.danger, fontSize: 13)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -426,68 +498,4 @@ class _SidebarItem extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────
-//  Node context dialog
-// ─────────────────────────────────────────────────────────────────
-class _NodeContextDialog extends StatelessWidget {
-  final GraphNode node;
-  final VoidCallback onDelete;
-  final VoidCallback onStartEdge;
-  final VoidCallback onExport;
 
-  const _NodeContextDialog({
-    required this.node,
-    required this.onDelete,
-    required this.onStartEdge,
-    required this.onExport,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: FileyColors.bg2,
-      title: Text(node.label),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _DialogAction(
-            icon: Icons.link, label: 'Connect to another node',
-            onTap: () { Navigator.pop(context); onStartEdge(); },
-          ),
-          _DialogAction(
-            icon: Icons.download_outlined, label: 'Export as .md',
-            onTap: () { Navigator.pop(context); onExport(); },
-          ),
-          const Divider(),
-          _DialogAction(
-            icon: Icons.delete_outline, label: 'Delete node',
-            color: FileyColors.danger,
-            onTap: () { Navigator.pop(context); onDelete(); },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DialogAction extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final Color color;
-
-  const _DialogAction({
-    required this.icon, required this.label, required this.onTap,
-    this.color = FileyColors.textPrimary,
-  });
-
-  @override
-  Widget build(BuildContext context) => ListTile(
-    leading: Icon(icon, size: 18, color: color),
-    title: Text(label, style: TextStyle(
-      fontFamily: 'IBMPlexMono', fontSize: 13, color: color,
-    )),
-    onTap: onTap,
-    dense: true,
-  );
-}

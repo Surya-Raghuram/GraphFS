@@ -24,7 +24,7 @@ class GraphCanvas extends StatefulWidget {
   final void Function(String uuid, double x, double y) onNodeMove;
   final void Function(String uuid) onNodeDoubleTap;
   final void Function(String uuid) onEdgeTargetTap;
-  final void Function(String uuid) onNodeRightClick;
+  final void Function(String uuid, Offset globalPosition) onNodeRightClick;
   final void Function(Offset canvasPos) onBackgroundTap;
 
   const GraphCanvas({
@@ -177,7 +177,7 @@ class _GraphCanvasState extends State<GraphCanvas>
 
   void _onSecondaryTapUp(TapUpDetails d) {
     final hit = _hitNode(d.localPosition);
-    if (hit != null) widget.onNodeRightClick(hit);
+    if (hit != null) widget.onNodeRightClick(hit, d.globalPosition);
   }
 
   @override

@@ -57,11 +57,11 @@ public:
     bool setNodeColor(const std::string& uuid, uint32_t rgba);
 
     // Import an external .md file: copies into nodes/, creates node entry.
-    std::string importMarkdown(const std::string& externalPath,
+    std::string importFile(const std::string& externalPath,
                                const std::string& label = "");
 
     // Export a node's .md to an external path with the display name.
-    bool exportMarkdown(const std::string& uuid, const std::string& destDir);
+    bool exportFile(const std::string& uuid, const std::string& destDir);
 
     // ── markdown content ───────────────────────────────────────
     // Read the .md content for a node.
@@ -71,7 +71,7 @@ public:
     bool writeNodeContent(const std::string& uuid, const std::string& content);
 
     // Return the absolute path to a node's .md file.
-    std::string nodeMdPath(const std::string& uuid) const;
+    std::string nodeFilePath(const std::string& uuid) const;
 
     // ── edge CRUD ──────────────────────────────────────────────
     bool addEdge(const std::string& fromUuid, const std::string& toUuid,

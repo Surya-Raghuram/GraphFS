@@ -106,11 +106,11 @@ class FileyProject extends ChangeNotifier {
     return ok;
   }
 
-  String? importMarkdown(String externalPath, {String label = ''}) {
+  String? importFile(String externalPath, {String label = ''}) {
     if (!isOpen) return null;
     final ePtr = externalPath.toNativeUtf8();
     final lPtr = label.toNativeUtf8();
-    final uuidPtr = _ffi.importMd(_handle, ePtr, lPtr);
+    final uuidPtr = _ffi.importFile(_handle, ePtr, lPtr);
     calloc.free(ePtr);
     calloc.free(lPtr);
     final uuid = _ffi.consumeStr(uuidPtr);
@@ -118,11 +118,11 @@ class FileyProject extends ChangeNotifier {
     return uuid;
   }
 
-  bool exportMarkdown(String uuid, String destDir) {
+  bool exportFile(String uuid, String destDir) {
     if (!isOpen) return false;
     final uPtr = uuid.toNativeUtf8();
     final dPtr = destDir.toNativeUtf8();
-    final ok = _ffi.exportMd(_handle, uPtr, dPtr);
+    final ok = _ffi.exportFile(_handle, uPtr, dPtr);
     calloc.free(uPtr);
     calloc.free(dPtr);
     return ok;
@@ -147,10 +147,10 @@ class FileyProject extends ChangeNotifier {
     return ok;
   }
 
-  String nodeMdPath(String uuid) {
+  String nodeFilePath(String uuid) {
     if (!isOpen) return '';
     final uPtr = uuid.toNativeUtf8();
-    final ptr = _ffi.nodeMdPath(_handle, uPtr);
+    final ptr = _ffi.nodeFilePath(_handle, uPtr);
     calloc.free(uPtr);
     return _ffi.consumeStr(ptr) ?? '';
   }

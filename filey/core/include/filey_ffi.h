@@ -30,17 +30,17 @@ bool  filey_move_node(FileyHandle h, const char* uuid, float x, float y);
 bool  filey_set_node_color(FileyHandle h, const char* uuid, uint32_t rgba);
 
 // Import external .md into project. Returns new UUID or NULL.
-char* filey_import_md(FileyHandle h, const char* ext_path, const char* label);
+char* filey_import_file(FileyHandle h, const char* ext_path, const char* label);
 
 // Export node .md to destDir. Returns true on success.
-bool  filey_export_md(FileyHandle h, const char* uuid, const char* dest_dir);
+bool  filey_export_file(FileyHandle h, const char* uuid, const char* dest_dir);
 
 // ── Markdown content ───────────────────────────────────────────────
 // Returns heap-allocated content string; caller must filey_free_str().
 char* filey_read_content(FileyHandle h, const char* uuid);
 bool  filey_write_content(FileyHandle h, const char* uuid, const char* content);
 // Returns heap-allocated absolute path; caller must filey_free_str().
-char* filey_node_md_path(FileyHandle h, const char* uuid);
+char* filey_node_file_path(FileyHandle h, const char* uuid);
 
 // ── Edges ──────────────────────────────────────────────────────────
 bool filey_add_edge(FileyHandle h, const char* from_uuid, const char* to_uuid,

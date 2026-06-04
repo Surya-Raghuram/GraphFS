@@ -40,11 +40,11 @@ typedef _MoveNodeDart   = bool Function(Pointer<Void>, Pointer<Utf8>, double, do
 typedef _SetColorNative = Bool Function(Pointer<Void>, Pointer<Utf8>, Uint32);
 typedef _SetColorDart   = bool Function(Pointer<Void>, Pointer<Utf8>, int);
 
-typedef _ImportMdNative = Pointer<Utf8> Function(Pointer<Void>, Pointer<Utf8>, Pointer<Utf8>);
-typedef _ImportMdDart   = Pointer<Utf8> Function(Pointer<Void>, Pointer<Utf8>, Pointer<Utf8>);
+typedef _ImportFileNative = Pointer<Utf8> Function(Pointer<Void>, Pointer<Utf8>, Pointer<Utf8>);
+typedef _ImportFileDart   = Pointer<Utf8> Function(Pointer<Void>, Pointer<Utf8>, Pointer<Utf8>);
 
-typedef _ExportMdNative = Bool Function(Pointer<Void>, Pointer<Utf8>, Pointer<Utf8>);
-typedef _ExportMdDart   = bool Function(Pointer<Void>, Pointer<Utf8>, Pointer<Utf8>);
+typedef _ExportFileNative = Bool Function(Pointer<Void>, Pointer<Utf8>, Pointer<Utf8>);
+typedef _ExportFileDart   = bool Function(Pointer<Void>, Pointer<Utf8>, Pointer<Utf8>);
 
 typedef _ReadContentNative = Pointer<Utf8> Function(Pointer<Void>, Pointer<Utf8>);
 typedef _ReadContentDart   = Pointer<Utf8> Function(Pointer<Void>, Pointer<Utf8>);
@@ -52,8 +52,8 @@ typedef _ReadContentDart   = Pointer<Utf8> Function(Pointer<Void>, Pointer<Utf8>
 typedef _WriteContentNative = Bool Function(Pointer<Void>, Pointer<Utf8>, Pointer<Utf8>);
 typedef _WriteContentDart   = bool Function(Pointer<Void>, Pointer<Utf8>, Pointer<Utf8>);
 
-typedef _NodeMdPathNative = Pointer<Utf8> Function(Pointer<Void>, Pointer<Utf8>);
-typedef _NodeMdPathDart   = Pointer<Utf8> Function(Pointer<Void>, Pointer<Utf8>);
+typedef _NodeFilePathNative = Pointer<Utf8> Function(Pointer<Void>, Pointer<Utf8>);
+typedef _NodeFilePathDart   = Pointer<Utf8> Function(Pointer<Void>, Pointer<Utf8>);
 
 typedef _AddEdgeNative = Bool Function(
     Pointer<Void>, Pointer<Utf8>, Pointer<Utf8>, Pointer<Utf8>, Bool);
@@ -94,12 +94,12 @@ class FileyFFI {
   late final _RenameNodeDart renameNode;
   late final _MoveNodeDart   moveNode;
   late final _SetColorDart   setNodeColor;
-  late final _ImportMdDart   importMd;
-  late final _ExportMdDart   exportMd;
+  late final _ImportFileDart   importFile;
+  late final _ExportFileDart   exportFile;
 
   late final _ReadContentDart  readContent;
   late final _WriteContentDart writeContent;
-  late final _NodeMdPathDart   nodeMdPath;
+  late final _NodeFilePathDart   nodeFilePath;
 
   late final _AddEdgeDart    addEdge;
   late final _RemoveEdgeDart removeEdge;
@@ -138,12 +138,12 @@ class FileyFFI {
     renameNode  = _lib.lookupFunction<_RenameNodeNative, _RenameNodeDart>('filey_rename_node');
     moveNode    = _lib.lookupFunction<_MoveNodeNative,   _MoveNodeDart>  ('filey_move_node');
     setNodeColor= _lib.lookupFunction<_SetColorNative,   _SetColorDart>  ('filey_set_node_color');
-    importMd    = _lib.lookupFunction<_ImportMdNative,   _ImportMdDart>  ('filey_import_md');
-    exportMd    = _lib.lookupFunction<_ExportMdNative,   _ExportMdDart>  ('filey_export_md');
+    importFile    = _lib.lookupFunction<_ImportFileNative,   _ImportFileDart>  ('filey_import_file');
+    exportFile    = _lib.lookupFunction<_ExportFileNative,   _ExportFileDart>  ('filey_export_file');
 
     readContent  = _lib.lookupFunction<_ReadContentNative,  _ReadContentDart> ('filey_read_content');
     writeContent = _lib.lookupFunction<_WriteContentNative, _WriteContentDart>('filey_write_content');
-    nodeMdPath   = _lib.lookupFunction<_NodeMdPathNative,   _NodeMdPathDart>  ('filey_node_md_path');
+    nodeFilePath   = _lib.lookupFunction<_NodeFilePathNative,   _NodeFilePathDart>  ('filey_node_file_path');
 
     addEdge    = _lib.lookupFunction<_AddEdgeNative,    _AddEdgeDart>   ('filey_add_edge');
     removeEdge = _lib.lookupFunction<_RemoveEdgeNative, _RemoveEdgeDart>('filey_remove_edge');

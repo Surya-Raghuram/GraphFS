@@ -123,7 +123,7 @@ std::string FileyProject::addNode(const std::string& label,
     graphNode node{};
     fillStrField(node.id,          sizeof(node.id),          uuid);
     fillStrField(node.label,       sizeof(node.label),       label);
-    fillStrField(node.md_filename, sizeof(node.md_filename), mdFile);
+    fillStrField(node.content_file, sizeof(node.content_file), mdFile);
     node.x         = x;
     node.y         = y;
     node.color_tag = colorTag;
@@ -150,7 +150,7 @@ bool FileyProject::removeNode(const std::string& uuid) {
     if (it == m_nodes.end()) return false;
 
     // delete .md file
-    std::string mdPath = m_nodesDir + "/" + it->md_filename;
+    std::string mdPath = m_nodesDir + "/" + it->content_file;
     std::error_code ec;
     fs::remove(mdPath, ec);
 
@@ -187,8 +187,8 @@ bool FileyProject::setNodeColor(const std::string& uuid, uint32_t rgba) {
     return writeMainFiley();
 }
 
-std::string FileyProject::importMarkdown(const std::string& externalPath,
-                                          const std::string& label) {
+std::string FileyProject::importFile(const std::string& externalPath,
+                                       const std::string& label) {
     if (!m_open) return "";
     if (!fs::exists(externalPath)) return "";
 
@@ -197,9 +197,10 @@ std::string FileyProject::importMarkdown(const std::string& externalPath,
         ? fs::path(externalPath).stem().string()
         : label;
 
-    std::string uuid   = generateUUID();
-    std::string mdFile = uuid + ".md";
-    std::string dst    = m_nodesDir + "/" + mdFile;
+    std::string uuid = generateUUID();
+    std::string ext = fs::path(externalPath).extension().string();
+    std::string contentFile = uuid + ext;
+    std::string dst = m_nodesDir + "/" + contentFile;
 
     std::error_code ec;
     fs::copy_file(externalPath, dst,
@@ -209,20 +210,23 @@ std::string FileyProject::importMarkdown(const std::string& externalPath,
     graphNode node{};
     fillStrField(node.id,          sizeof(node.id),          uuid);
     fillStrField(node.label,       sizeof(node.label),       lbl);
-    fillStrField(node.md_filename, sizeof(node.md_filename), mdFile);
+    fillStrField(node.content_file, sizeof(node.content_file), contentFile);
     node.x = 0; node.y = 0;
+    node.color_tag = 0;
+    std::memset(node._pad, 0, sizeof(node._pad));
 
     m_nodes.push_back(node);
     writeMainFiley();
     return uuid;
 }
 
-bool FileyProject::exportMarkdown(const std::string& uuid,
-                                   const std::string& destDir) {
+bool FileyProject::exportFile(const std::string& uuid,
+                               const std::string& destDir) {
     const auto* node = findNode(uuid);
     if (!node) return false;
-    std::string src = m_nodesDir + "/" + node->md_filename;
-    std::string dst = destDir + "/" + node->label + ".md";
+    std::string src = m_nodesDir + "/" + node->content_file;
+    std::string ext = fs::path(src).extension().string();
+    std::string dst = destDir + "/" + node->label + ext;
     std::error_code ec;
     fs::copy_file(src, dst, fs::copy_options::overwrite_existing, ec);
     return !ec;
@@ -234,7 +238,7 @@ bool FileyProject::exportMarkdown(const std::string& uuid,
 std::string FileyProject::readNodeContent(const std::string& uuid) const {
     const auto* node = findNode(uuid);
     if (!node) return "";
-    std::ifstream f(m_nodesDir + "/" + node->md_filename);
+    std::ifstream f(m_nodesDir + "/" + node->content_file);
     if (!f) return "";
     std::ostringstream ss;
     ss << f.rdbuf();
@@ -245,17 +249,17 @@ bool FileyProject::writeNodeContent(const std::string& uuid,
                                      const std::string& content) {
     const auto* node = findNode(uuid);
     if (!node) return false;
-    std::ofstream f(m_nodesDir + "/" + node->md_filename,
+    std::ofstream f(m_nodesDir + "/" + node->content_file,
                     std::ios::trunc);
     if (!f) return false;
     f << content;
     return true;
 }
 
-std::string FileyProject::nodeMdPath(const std::string& uuid) const {
+std::string FileyProject::nodeFilePath(const std::string& uuid) const {
     const auto* node = findNode(uuid);
     if (!node) return "";
-    return m_nodesDir + "/" + node->md_filename;
+    return m_nodesDir + "/" + node->content_file;
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -370,6 +374,41 @@ bool FileyProject::readMainFiley() {
         return false;
     }
     if (fHdr.version != FILEY_VERSION) {
+        if (fHdr.version == 2) {
+            std::cerr << "[filey] readMainFiley: migrating from V2\n";
+            graphHeader gHdr{};
+            file.read(reinterpret_cast<char*>(&gHdr), sizeof(gHdr));
+
+            struct graphNodeV2 {
+                char     id[37];
+                char     label[128];
+                char     content_file[40];
+                float    x;
+                float    y;
+                uint32_t color_tag;
+                uint8_t  _pad[4];
+            };
+
+            std::vector<graphNodeV2> oldNodes(gHdr.num_nodes);
+            file.read(reinterpret_cast<char*>(oldNodes.data()), sizeof(graphNodeV2) * gHdr.num_nodes);
+
+            m_nodes.resize(gHdr.num_nodes);
+            for (size_t i=0; i<gHdr.num_nodes; ++i) {
+                std::memcpy(m_nodes[i].id, oldNodes[i].id, 37);
+                std::memcpy(m_nodes[i].label, oldNodes[i].label, 128);
+                std::memcpy(m_nodes[i].content_file, oldNodes[i].content_file, 40);
+                m_nodes[i].x = oldNodes[i].x;
+                m_nodes[i].y = oldNodes[i].y;
+                m_nodes[i].color_tag = oldNodes[i].color_tag;
+                std::memset(m_nodes[i]._pad, 0, sizeof(m_nodes[i]._pad)); // Zero new padding
+            }
+
+            m_edges.resize(gHdr.num_edges);
+            file.read(reinterpret_cast<char*>(m_edges.data()), sizeof(graphEdge) * gHdr.num_edges);
+
+            return file.good() || file.eof();
+        }
+
         std::cerr << "[filey] readMainFiley: version mismatch "
                   << fHdr.version << " != " << FILEY_VERSION << "\n";
         return false;

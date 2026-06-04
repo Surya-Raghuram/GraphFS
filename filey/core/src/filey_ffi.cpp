@@ -127,14 +127,14 @@ bool filey_set_node_color(FileyHandle h, const char* uuid, uint32_t rgba) {
     return h ? proj(h)->setNodeColor(uuid, rgba) : false;
 }
 
-char* filey_import_md(FileyHandle h, const char* ext_path, const char* label) {
+char* filey_import_file(FileyHandle h, const char* ext_path, const char* label) {
     if (!h) return nullptr;
-    return heap_str(proj(h)->importMarkdown(ext_path ? ext_path : "",
+    return heap_str(proj(h)->importFile(ext_path ? ext_path : "",
                                              label    ? label    : ""));
 }
 
-bool filey_export_md(FileyHandle h, const char* uuid, const char* dest_dir) {
-    return h ? proj(h)->exportMarkdown(uuid, dest_dir ? dest_dir : "") : false;
+bool filey_export_file(FileyHandle h, const char* uuid, const char* dest_dir) {
+    return h ? proj(h)->exportFile(uuid, dest_dir ? dest_dir : "") : false;
 }
 
 // ── Markdown content ─────
@@ -147,9 +147,9 @@ bool filey_write_content(FileyHandle h, const char* uuid, const char* content) {
     return h ? proj(h)->writeNodeContent(uuid, content ? content : "") : false;
 }
 
-char* filey_node_md_path(FileyHandle h, const char* uuid) {
+char* filey_node_file_path(FileyHandle h, const char* uuid) {
     if (!h) return nullptr;
-    return heap_str(proj(h)->nodeMdPath(uuid));
+    return heap_str(proj(h)->nodeFilePath(uuid));
 }
 
 // ── Edges ─────
@@ -180,7 +180,7 @@ char* filey_graph_json(FileyHandle h) {
         ss << '{'
            << "\"id\":\""          << jsonEsc(n.id)          << "\","
            << "\"label\":\""       << jsonEsc(n.label)        << "\","
-           << "\"md_filename\":\"" << jsonEsc(n.md_filename)  << "\","
+           << "\"content_file\":\"" << jsonEsc(n.content_file)  << "\","
            << "\"x\":"             << n.x                     << ','
            << "\"y\":"             << n.y                     << ','
            << "\"color\":"         << n.color_tag

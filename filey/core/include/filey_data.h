@@ -6,7 +6,7 @@
 //  Magic signature + version
 // ─────────────────────────────────────────────
 static constexpr char FILEY_SIGNATURE[6] = {'F','I','L','E','Y','\0'};
-static constexpr uint16_t FILEY_VERSION  = 2;
+static constexpr uint16_t FILEY_VERSION  = 3;
 
 // ─────────────────────────────────────────────
 //  UUID: 36-char string + null  (e.g. "550e8400-e29b-41d4-a716-446655440000")
@@ -38,11 +38,11 @@ struct graphHeader {
 struct graphNode {
     char     id[UUID_LEN];          // stable UUID
     char     label[128];            // display name (user-editable)
-    char     md_filename[UUID_LEN + 3]; // "<uuid>.md"
+    char     content_file[64];      // "<uuid>.<ext>"
     float    x;                     // canvas position
     float    y;
     uint32_t color_tag;             // RGBA colour hint (0 = default)
-    uint8_t  _pad[4];               // keep struct size a multiple of 8
+    uint8_t  _pad[7];               // keep struct size a multiple of 8
 };
 
 // ─────────────────────────────────────────────

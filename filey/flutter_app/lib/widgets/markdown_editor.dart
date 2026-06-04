@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import '../models/graph_model.dart';
 import '../services/filey_project.dart';
 import '../theme/filey_theme.dart';
@@ -94,6 +96,12 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
   // ── build ────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    bool isPdf = widget.node.contentFile.toLowerCase().endsWith('.pdf');
+    bool isImage = widget.node.contentFile.toLowerCase().endsWith('.png') || widget.node.contentFile.toLowerCase().endsWith('.jpg') || widget.node.contentFile.toLowerCase().endsWith('.jpeg') || widget.node.contentFile.toLowerCase().endsWith('.gif');
+    bool isTxt = widget.node.contentFile.toLowerCase().endsWith('.txt');
+    bool isMd = widget.node.contentFile.toLowerCase().endsWith('.md');
+    bool isEditable = isMd || isTxt;
+
     return Container(
       color: FileyColors.bg0,
       child: Column(
@@ -101,8 +109,8 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
         children: [
           _buildHeader(),
           const Divider(),
-          _buildToolbar(),
-          const Divider(),
+          if (isEditable) _buildToolbar(),
+          if (isEditable) const Divider(),
           Expanded(child: widget.isFullscreen ? (_showPreview ? _buildPreview() : _buildEditor()) : _buildPreview()),
         ],
       ),
@@ -274,6 +282,23 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
   }
 
   Widget _buildPreview() {
+    bool isPdf = widget.node.contentFile.toLowerCase().endsWith('.pdf');
+    bool isImage = widget.node.contentFile.toLowerCase().endsWith('.png') || widget.node.contentFile.toLowerCase().endsWith('.jpg') || widget.node.contentFile.toLowerCase().endsWith('.jpeg') || widget.node.contentFile.toLowerCase().endsWith('.gif');
+    bool isTxt = widget.node.contentFile.toLowerCase().endsWith('.txt');
+
+    if (isPdf) {
+      String path = widget.project.nodeFilePath(widget.node.id);
+      return SfPdfViewer.file(File(path));
+    } else if (isImage) {
+      String path = widget.project.nodeFilePath(widget.node.id);
+      return InteractiveViewer(child: Image.file(File(path)));
+    } else if (isTxt) {
+      return SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Text(_ctrl.text, style: const TextStyle(fontFamily: 'IBMPlexMono', fontSize: 13, color: FileyColors.textPrimary)),
+      );
+    }
+
     return Markdown(
       data: _ctrl.text,
       styleSheet: _mdStyleSheet(context),

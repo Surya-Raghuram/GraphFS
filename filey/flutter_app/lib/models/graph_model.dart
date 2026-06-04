@@ -6,7 +6,7 @@ import 'dart:ui';
 class GraphNode {
   final String id;
   final String label;
-  final String mdFilename;
+  final String contentFile;
   double x;
   double y;
   final int colorTag; // RGBA packed int
@@ -14,7 +14,7 @@ class GraphNode {
   GraphNode({
     required this.id,
     required this.label,
-    required this.mdFilename,
+    required this.contentFile,
     required this.x,
     required this.y,
     this.colorTag = 0,
@@ -23,7 +23,7 @@ class GraphNode {
   factory GraphNode.fromJson(Map<String, dynamic> j) => GraphNode(
         id: j['id'] as String,
         label: j['label'] as String,
-        mdFilename: j['md_filename'] as String,
+        contentFile: j['content_file'] as String,
         x: (j['x'] as num).toDouble(),
         y: (j['y'] as num).toDouble(),
         colorTag: (j['color'] as num?)?.toInt() ?? 0,
@@ -45,7 +45,7 @@ class GraphNode {
       GraphNode(
         id: id,
         label: label ?? this.label,
-        mdFilename: mdFilename,
+        contentFile: contentFile,
         x: x ?? this.x,
         y: y ?? this.y,
         colorTag: colorTag ?? this.colorTag,
